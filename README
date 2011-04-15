@@ -1,0 +1,39 @@
+essen.py
+^^^^^^^^
+
+WARNING! This script was hacked in a few minutes, it has the "Works-on-my-machine" 
+certification. Will most likely break.
+
+A script to fetch the newest "Speiseplan" of the Max-Planck-Institut für Plasmaphysik
+canteen in Garching, Germany. Also fetches the newest "Mensa Speiselplan" of the 
+Studentenwerks-Mensa in Garching, Germany.
+
+Then stores the results using python pickle to the file "essen.db". Lookups whats to
+eat can also be done using this script.
+
+Usage:
+
+update the database:
+$ python essen.py -u 
+
+whats to eat today?:
+$ python essen.py
+
+whats to eat next tuesday?:
+$ python essen.py Dienstag
+or
+$ python essen.py di
+
+whats to eat at a specific date?:
+$ python essen.py 15.04.2011
+$ python essen.py 15.04
+$ python essen.py 15
+
+Month and Year can be omitted and will be substituted automatically.
+
+Uses external libraries:
+Thanks to the authors for making them public!
+
+BeautifulSoup
+pdfminer
+WebCursor
