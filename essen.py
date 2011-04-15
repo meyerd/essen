@@ -64,7 +64,7 @@ def remove_older(when):
 		if k < when:
 			del config["meals"][k]
 
-def get_new_loske():
+def parse_loske_pdf(pdf):
 	stripcid_re = re.compile(u"\(cid:.*?\)")
 	newline_heuristic_re = re.compile(u"Montag, den |Dienstag, den |Mittwoch, den |Donnerstag, den |Freitag, den ", re.IGNORECASE)
 	bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*")
@@ -72,34 +72,6 @@ def get_new_loske():
 	meal_detect_re = re.compile(u"(\d\.)(\D)")
 	date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})")
 
-	wc = WebCursor();
-	print u"Downloading", loske_base_url+loske_main, u"..."
-	loske_html = wc.get(loske_base_url+loske_main)
-	if loske_html == "":
-		print >>sys.stderr, u"Could not download" , loske_base_url+loske_main
-		sys.exit(1)
-	soup = BeautifulSoup(loske_html)
-	# print soup.prettify()
-	tds = soup.findAll(u'td', attrs={u'class' : u'csc-uploads-fileName'})
-	thisweek_url = ""
-	if len(tds) < 1:
-		print >>sys.stderr, u"Parse html error"
-		sys.exit(1)
-	alla = tds[0].findAll('a')
-	if len(alla) < 1:
-		print >>sys.stderr, u"Parse html error"
-		sys.exit(1)
-	thisweek_url = alla[0]['href']
-	if thisweek_url == "":
-		print >>sys.stderr, u"Parse html error"
-		sys.exit(1)
-
-	print u"Downloading", loske_base_url+thisweek_url, u"..."
-	pdf = wc.get(loske_base_url+thisweek_url)
-	if pdf == "":
-		print >>sys.stderr, u"Could not download", loske_base_url+thisweek_url
-		sys.exit(1)
-	
 	rsrcmgr = PDFResourceManager()
 	outtxt = cStringIO.StringIO()
 	device = TextConverter(rsrcmgr, outtxt)
@@ -146,6 +118,54 @@ def get_new_loske():
 				config["meals"][now].append((TYPE_IPP, line))
 			except KeyError, e:
 				config["meals"][now] = [(TYPE_IPP, line)]
+
+def get_new_loske():
+	wc = WebCursor();
+	print u"Downloading", loske_base_url+loske_main, u"..."
+	loske_html = wc.get(loske_base_url+loske_main)
+	if loske_html == "":
+		print >>sys.stderr, u"Could not download" , loske_base_url+loske_main
+		sys.exit(1)
+	soup = BeautifulSoup(loske_html)
+	# print soup.prettify()
+	tds = soup.findAll(u'td', attrs={u'class' : u'csc-uploads-fileName'})
+	thisweek_url = ""
+	if len(tds) < 2:
+		print >>sys.stderr, u"Parse html error"
+		sys.exit(1)
+	alla = tds[0].findAll('a')
+	if len(alla) < 1:
+		print >>sys.stderr, u"Parse html error"
+		sys.exit(1)
+	thisweek_url = alla[0]['href']
+	if thisweek_url == "":
+		print >>sys.stderr, u"Parse html error"
+		sys.exit(1)
+
+	print u"Downloading", loske_base_url+thisweek_url, u"..."
+	pdf = wc.get(loske_base_url+thisweek_url)
+	if pdf == "":
+		print >>sys.stderr, u"Could not download", loske_base_url+thisweek_url
+		sys.exit(1)
+	parse_loske_pdf(pdf)
+
+	nextweek_url = ""
+	alla = tds[1].findAll('a')
+	if len(alla) < 1:
+		print >>sys.stderr, u"Parse html error"
+		sys.exit(1)
+	nextweek_url = alla[0]['href']
+	if thisweek_url == "":
+		print >>sys.stderr, u"Parse html error"
+		sys.exit(1)
+	
+	print u"Downloading", loske_base_url+nextweek_url, u"..."
+	pdf = wc.get(loske_base_url+nextweek_url)
+	if pdf == "":
+		print >>sys.stderr, u"Could not download", loske_base_url+nextweek_url
+		sys.exit(1)
+	parse_loske_pdf(pdf)
+
 	config["last_update_ipp"] = datetime.date.today()
 
 def get_new_mensa():
