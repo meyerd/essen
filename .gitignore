@@ -1,0 +1,3 @@
+*.pyc
+.gitignore
+essen.db
