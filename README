@@ -8,7 +8,7 @@ A script to fetch the newest "Speiseplan" of the Max-Planck-Institut für Plasma
 canteen in Garching, Germany. Also fetches the newest "Mensa Speiselplan" of the 
 Studentenwerks-Mensa in Garching, Germany.
 
-Then stores the results using python pickle to the file "essen.db". Lookups whats to
+Then stores the results using python pickle to the file "~/.essen". Lookups whats to
 eat can also be done using this script.
 
 Usage:
