@@ -20,12 +20,21 @@ mensa_garching_rss = u"http://geigerma.de/mensa/mensa.xml.php?mensa=mensa_garchi
 config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
 
 class bcolors:
-	HEADER = '\033[95m'
-	OKBLUE = '\033[94m'
-	OKGREEN = '\033[92m'
-	WARNING = '\033[93m'
-	FAIL = '\033[91m'
-	ENDC = '\033[0m'
+	HEADER = ''
+	OKBLUE = ''
+	OKGREEN = ''
+	WARNING = ''
+	FAIL = ''
+	ENDC = ''
+
+	import platform
+	if platform.system() == u'Linux':
+		HEADER = '\033[95m'
+		OKBLUE = '\033[94m'
+		OKGREEN = '\033[92m'
+		WARNING = '\033[93m'
+		FAIL = '\033[91m'
+		ENDC = '\033[0m'
 
 	def disable(self):
 		self.HEADER = ''
