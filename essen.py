@@ -11,10 +11,13 @@ from pdfminer.layout import LAParams
 import datetime, pickle, textwrap, argparse
 import os.path
 
+
+consolewidth = 80
+
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
 mensa_garching_rss = u"http://geigerma.de/mensa/mensa.xml.php?mensa=mensa_garching"
-config_file = u"essen.db"
+config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
 
 class bcolors:
 	HEADER = '\033[95m'
@@ -24,13 +27,13 @@ class bcolors:
 	FAIL = '\033[91m'
 	ENDC = '\033[0m'
 
-def disable(self):
-	self.HEADER = ''
-	self.OKBLUE = ''
-	self.OKGREEN = ''
-	self.WARNING = ''
-	self.FAIL = ''
-	self.ENDC = ''
+	def disable(self):
+		self.HEADER = ''
+		self.OKBLUE = ''
+		self.OKGREEN = ''
+		self.WARNING = ''
+		self.FAIL = ''
+		self.ENDC = ''
 
 TYPE_IPP, TYPE_MENSA = range(2)
 
@@ -58,7 +61,7 @@ def dump_all_meals():
 		print u"%s:" % (str(d)) 
 		for m in config["meals"][d]:
 			t, s = m
-			sb = u'\n       '.join(textwrap.wrap(s, 50))
+			sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
 			print " %s - %s" % ("IPP" if t is TYPE_IPP else "MEN", sb.encode(sys.stdout.encoding, 'replace'))
 
 def dump_one_day_meals(date):
@@ -68,7 +71,7 @@ def dump_one_day_meals(date):
 			print u"%s:" % (str(d)) 
 			for m in config["meals"][d]:
 				t, s = m
-				sb = u'\n       '.join(textwrap.wrap(s, 50))
+				sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
 				print " %s - %s" % ("IPP" if t is TYPE_IPP else "MEN", sb.encode(sys.stdout.encoding, 'replace'))
 
 
@@ -337,7 +340,7 @@ if __name__ == '__main__':
 		load_config(config_file)
 	else:
 		print >>sys.stderr, bcolors.FAIL + "No configfile found. You may want to run an update." + bcolors.ENDC
-
+		sys.exit(1)
 	
 	if datetime.date.today() - config["last_update_mensa"] > datetime.timedelta(days=6) or datetime.date.today() - config["last_update_ipp"] > datetime.timedelta(days=6):
 		print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 days ago. You might want to consider an update." + bcolors.ENDC
