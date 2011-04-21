@@ -16,6 +16,22 @@ loske_main = u"index.php?id=91"
 mensa_garching_rss = u"http://geigerma.de/mensa/mensa.xml.php?mensa=mensa_garching"
 config_file = u"essen.db"
 
+class bcolors:
+	HEADER = '\033[95m'
+	OKBLUE = '\033[94m'
+	OKGREEN = '\033[92m'
+	WARNING = '\033[93m'
+	FAIL = '\033[91m'
+	ENDC = '\033[0m'
+
+def disable(self):
+	self.HEADER = ''
+	self.OKBLUE = ''
+	self.OKGREEN = ''
+	self.WARNING = ''
+	self.FAIL = ''
+	self.ENDC = ''
+
 TYPE_IPP, TYPE_MENSA = range(2)
 
 config = {}
@@ -320,17 +336,23 @@ if __name__ == '__main__':
 	if os.path.isfile(config_file):
 		load_config(config_file)
 	else:
-		print >>sys.stderr, "No configfile found. You may want to run an update."
+		print >>sys.stderr, bcolors.FAIL + "No configfile found. You may want to run an update." + bcolors.ENDC
+
 	
 	if datetime.date.today() - config["last_update_mensa"] > datetime.timedelta(days=6) or datetime.date.today() - config["last_update_ipp"] > datetime.timedelta(days=6):
-		print >>sys.stderr, "Last update was more than 6 days ago. You might want to consider an update."
+		print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 days ago. You might want to consider an update." + bcolors.ENDC
 	
-	if not opts.date:
+	if opts.date is None:
+		if datetime.date.today().weekday() == 2:
+			print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" + bcolors.ENDC
 		dump_one_day_meals(datetime.date.today())
 		sys.exit(0)
 
 	if opts.date == "all":
 		dump_all_meals()
 		sys.exit(0)
+
+	if opts.date.weekday() == 2:
+		print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" + bcolors.ENDC
 
 	dump_one_day_meals(opts.date)
