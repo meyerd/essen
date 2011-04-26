@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
 import sys, cStringIO, re
 from BeautifulSoup import BeautifulSoup
@@ -104,7 +105,7 @@ def parse_loske_pdf(pdf):
                                       re.IGNORECASE)
     bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*")
     dow_beginheuristic_re = re.compile(u".*?Montag, den ", re.IGNORECASE)
-    meal_detect_re = re.compile(u"(\d\.)(.*?\d.\d\d)")
+    meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)")
     #meal_detect_re = re.compile(u"(\d\.)(\D)")
     date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
 
@@ -145,7 +146,7 @@ def parse_loske_pdf(pdf):
         if ret:
             day, month, year, meals = ret.groups()
             now = datetime.date(int(year), int(month), int(day))
-            meals = meal_detect_re.sub(r'\n\2', meals).strip()
+            meals = meal_detect_re.sub(ur'\n\2(\3,\4 €)', meals).strip()
             for m in meals.split(u'\n'):
                 try:
                     tmp = config["meals"][now]
