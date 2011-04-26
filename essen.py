@@ -14,7 +14,7 @@ import datetime, pickle, textwrap, argparse
 import os.path
 
 
-consolewidth = 80
+consolewidth = 79
 
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
