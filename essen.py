@@ -250,6 +250,13 @@ def get_new_mensa():
                     config["meals"][now] = [(TYPE_MENSA, m)]
     config["last_update_mensa"] = datetime.date.today()
 
+def update_all():
+    print >>sys.stderr, u"Updating..."
+    config["meals"] = {}
+    get_new_mensa()
+    get_new_loske()
+    save_config(config_file)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -353,10 +360,7 @@ if __name__ == '__main__':
     opts = parser.parse_args()
 
     if opts.u:
-        config["meals"] = {}
-        get_new_mensa()
-        get_new_loske()
-        save_config(config_file)
+        update_all()
 
     if os.path.isfile(config_file):
         load_config(config_file)
@@ -370,8 +374,8 @@ if __name__ == '__main__':
        datetime.date.today() - config["last_update_ipp"] > \
        datetime.timedelta(days=6):
         print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 " \
-                "days ago. You might want to consider an update." \
-                + bcolors.ENDC
+                "days ago." + bcolors.ENDC
+        update_all()
     
     if opts.date is None:
         if datetime.date.today().weekday() == 2:
