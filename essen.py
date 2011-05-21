@@ -123,7 +123,6 @@ def parse_loske_pdf(pdf):
         print >>sys.stderr, u"PDF Document not extractable"
         sys.exit(1)
 
-    print u"Processing pages ..."
     interpreter = PDFPageInterpreter(rsrcmgr, device)
     for (pageno,page) in enumerate(doc.get_pages()):
         #print pageno
@@ -156,7 +155,6 @@ def parse_loske_pdf(pdf):
 
 def get_new_loske():
     wc = WebCursor();
-    print u"Downloading", loske_base_url+loske_main, u"..."
     loske_html = wc.get(loske_base_url+loske_main)
     if loske_html == "":
         print >>sys.stderr, u"Could not download" , loske_base_url+loske_main
@@ -177,7 +175,6 @@ def get_new_loske():
         print >>sys.stderr, u"Parse html error"
         sys.exit(1)
 
-    print u"Downloading", loske_base_url+thisweek_url, u"..."
     pdf = wc.get(loske_base_url+thisweek_url)
     if pdf == "":
         print >>sys.stderr, u"Could not download", loske_base_url+thisweek_url
@@ -194,7 +191,6 @@ def get_new_loske():
         print >>sys.stderr, u"Parse html error"
         sys.exit(1)
     
-    print u"Downloading", loske_base_url+nextweek_url, u"..."
     pdf = wc.get(loske_base_url+nextweek_url)
     if pdf == "":
         print >>sys.stderr, u"Could not download", loske_base_url+nextweek_url
@@ -209,7 +205,6 @@ def get_new_mensa():
     desc_nl_rep_re = re.compile(u"<br>")
 
     wc = WebCursor();
-    print u"Downloading", mensa_garching_rss, u"..."
     mensa_html = wc.get(mensa_garching_rss)
     if mensa_html == "":
         print >>sys.stderr, u"Could not download" , mensa_garching_rss
