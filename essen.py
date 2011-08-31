@@ -18,6 +18,7 @@ consolewidth = 79
 
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
+ausgabe_mittagskarte = u"http://www.protutti.com/firmen/M/Ausgabe/upfile/Wochenkarte.pdf"
 mensa_garching_rss = \
         u"http://geigerma.de/mensa/mensa.xml.php?mensa=mensa_garching"
 config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
@@ -47,11 +48,12 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
-TYPE_IPP, TYPE_MENSA = range(2)
+TYPE_AUS, TYPE_IPP, TYPE_MENSA = range(3)
 
 config = {}
 config["last_update_ipp"] = datetime.date(1,1,1)
 config["last_update_mensa"] = datetime.date(1,1,1)
+config["last_update_aus"] = datetime.date(1,1,1)
 config["meals"] = {}
 
 def save_config(filename):
@@ -74,8 +76,13 @@ def dump_all_meals():
         for m in config["meals"][d]:
             t, s = m
             sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
-            print " %s - %s" % ("IPP" if t is TYPE_IPP else "MEN",
-                                sb.encode(sys.stdout.encoding, 'replace'))
+            if t is TYPE_IPP:
+                print " IPP",
+            elif t is TYPE_AUS:
+                print " AUS",
+            else:
+                print " MEN",
+            print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def dump_one_day_meals(date):
     dates = config["meals"].keys()
@@ -85,8 +92,13 @@ def dump_one_day_meals(date):
             for m in config["meals"][d]:
                 t, s = m
                 sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
-                print " %s - %s" % ("IPP" if t is TYPE_IPP else "MEN",
-                                    sb.encode(sys.stdout.encoding, 'replace'))
+                if t is TYPE_IPP:
+                    print " IPP",
+                elif t is TYPE_AUS:
+                    print " AUS",
+                else:
+                    print " MEN",
+                print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 
 def show_last_update():
@@ -199,6 +211,103 @@ def get_new_loske():
 
     config["last_update_ipp"] = datetime.date.today()
 
+def dow_to_int(dow):
+    montag_re = re.compile(u"Montag", re.IGNORECASE)
+    dienstag_re = re.compile(u"Dienstag", re.IGNORECASE)
+    mittwoch_re = re.compile(u"Mittwoch", re.IGNORECASE)
+    donnerstag_re = re.compile(u"Donnerstag", re.IGNORECASE)
+    freitag_re = re.compile(u"Freitag", re.IGNORECASE)
+
+    ret = montag_re.search(dow)
+    if ret:
+        return 0
+    ret = dienstag_re.search(dow)
+    if ret:
+        return 1
+    ret = mittwoch_re.search(dow)
+    if ret:
+        return 2
+    ret = donnerstag_re.search(dow)
+    if ret:
+        return 3
+    ret = freitag_re.search(dow)
+    if ret:
+        return 4
+
+    return -1
+
+def parse_ausgabe_pdf(pdf):
+    stripcid_re = re.compile(u"\(cid:.*?\)")
+    newline_heuristic_re = re.compile(u"(?:\u20ac)?(Montag|Dienstag|Mittwoch" \
+                                      u"|Donnerstag|Freitag)",
+                                      re.IGNORECASE)
+    guapp_endheuristic_re = re.compile(u"Guten Appetit.*")
+    dow_beginheuristic_re = re.compile(u".*?(Montag)", re.IGNORECASE)
+    meal_detect_re = re.compile(u" *?(\d+),(\d\d).*?(?:\*\d+,\d\d€?)")
+    #meal_detect_re = re.compile(u"(\d\.)(\D)")
+    date_re = re.compile(u"(Montag|Dienstag|Mittwoch|Donnerstag|Freitag)(.*)")
+    whitespace_re = re.compile(u"^[ \t\n]*$")
+
+    rsrcmgr = PDFResourceManager()
+    outtxt = cStringIO.StringIO()
+    device = TextConverter(rsrcmgr, outtxt)
+    
+    pdfp = PDFParser(cStringIO.StringIO(pdf))
+    doc = PDFDocument()
+    pdfp.set_document(doc)
+    doc.set_parser(pdfp)
+    doc.initialize("")
+
+    if not doc.is_extractable:
+        print >>sys.stderr, u"PDF Document not extractable"
+        sys.exit(1)
+
+    interpreter = PDFPageInterpreter(rsrcmgr, device)
+    for (pageno,page) in enumerate(doc.get_pages()):
+        #print pageno
+        interpreter.process_page(page)
+    
+    device.close()
+
+    fulltext = outtxt.getvalue().decode('utf-8', 'replace')
+    #fulltext = stripcid_re.sub(u'', fulltext)
+    fulltext = dow_beginheuristic_re.sub(u'\g<1>', fulltext)
+    fulltext = guapp_endheuristic_re.sub(u'', fulltext)
+    fulltext = newline_heuristic_re.sub(u'\n\g<1>', fulltext)
+
+    lines = fulltext.split(u'\n')
+
+    now = datetime.date(1,1,1)
+
+    for line in lines:
+        ret = date_re.search(line)
+        if ret:
+            dow, meals = ret.groups()
+            dow = dow_to_int(dow)
+            if dow < 0:
+                continue
+            now_dow = datetime.date.today().weekday()
+            dow_diff = dow - now_dow
+            now = datetime.date.today() + datetime.timedelta(dow_diff)
+            meals = meal_detect_re.sub(ur' (\1,\2 €)\n', meals).strip()
+            for m in meals.split(u'\n'):
+                try:
+                    tmp = config["meals"][now]
+                    config["meals"][now].append((TYPE_AUS, m))
+                except KeyError, e:
+                    config["meals"][now] = [(TYPE_AUS, m)]
+
+def get_new_ausgabe():
+    wc = WebCursor();
+
+    pdf = wc.get(ausgabe_mittagskarte)
+    if pdf == "":
+        print >>sys.stderr, u"Could not download", ausgabe_mittagskarte
+        sys.exit(1)
+    parse_ausgabe_pdf(pdf)
+
+    config["last_update_aus"] = datetime.date.today()
+
 def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
@@ -250,6 +359,7 @@ def update_all():
     config["meals"] = {}
     get_new_mensa()
     get_new_loske()
+    get_new_ausgabe()
     save_config(config_file)
 
 
@@ -257,7 +367,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=textwrap.dedent('''\
-    Command line interface to the Mensa and Max-Planck-Institute Mealplans
+    Command line interface to the Mensa, Max-Planck-Institute Garching
+     and Ausgabe Schwabing Mealplans.
         DATE can be a date in german format (e.g. 14.04.2011, 4.2.2010, ...)
         DATE can also be a day and month (e.g. 14.4.)
         DATE can also be only a day, month and year will be the current year 
@@ -367,6 +478,8 @@ if __name__ == '__main__':
     if datetime.date.today() - config["last_update_mensa"] > \
        datetime.timedelta(days=6) or \
        datetime.date.today() - config["last_update_ipp"] > \
+       datetime.timedelta(days=6) or \
+       datetime.date.today() - config["last_update_aus"] > \
        datetime.timedelta(days=6):
         print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 " \
                 "days ago." + bcolors.ENDC
