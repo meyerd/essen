@@ -19,9 +19,35 @@ consolewidth = 79
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
 ausgabe_mittagskarte = u"http://www.protutti.com/firmen/M/Ausgabe/upfile/Wochenkarte.pdf"
-mensa_garching_rss = \
-        u"http://geigerma.de/mensa/mensa.xml.php?mensa=mensa_garching"
+mensa_arcis = \
+    u"http://www.studentenwerk-muenchen.de/mensa/speiseplan/speiseplan_421_-de.html"
 config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
+
+mensa_price_mapping = {
+    u"Tagesgericht 1"   : 1.90,
+    u"Tagesgericht 2"   : 2.20,
+    u"Tagesgericht 3"   : 2.40,
+    u"Tagesgericht 4"   : 2.80,
+    u"Biogericht 1"     : 2.20,
+    u"Biogericht 2"     : 2.40,
+    u"Biogericht 3"     : 2.80,
+    u"Biogericht 4"     : 3.00,
+    u"Biogericht 5"     : 3.20,
+    u"Biogericht 6"     : 3.40,
+    u"Biogericht 7"     : 3.60,
+    u"Biogericht 8"     : 3.90,
+    u"Biogericht 9"     : 4.40,
+    u"Biogericht 10"    : 4.90,
+    u"Aktionsessen 1"   : 2.20,
+    u"Aktionsessen 2"   : 2.40,
+    u"Aktionsessen 3"   : 2.80,
+    u"Aktionsessen 4"   : 3.00,
+    u"Aktionsessen 5"   : 3.20,
+    u"Aktionsessen 6"   : 3.40,
+    u"Aktionsessen 7"   : 3.60,
+    u"Aktionsessen 8"   : 3.90,
+    u"Aktionsessen 9"   : 4.40,
+    u"Aktionsessen 10"  : 4.90}
 
 class bcolors:
     HEADER = ''
@@ -55,6 +81,10 @@ config["last_update_ipp"] = datetime.date(1,1,1)
 config["last_update_mensa"] = datetime.date(1,1,1)
 config["last_update_aus"] = datetime.date(1,1,1)
 config["meals"] = {}
+
+def error(string):
+    print >>sys.stderr, string
+    sys.exit(1)
 
 def save_config(filename):
     fp = open(filename, "w")
@@ -314,44 +344,61 @@ def get_new_mensa():
     desc_nl_rep_re = re.compile(u"<br>")
 
     wc = WebCursor();
-    mensa_html = wc.get(mensa_garching_rss)
+    mensa_html = wc.get(mensa_arcis)
     if mensa_html == "":
-        print >>sys.stderr, u"Could not download" , mensa_garching_rss
+        print >>sys.stderr, u"Could not download" , mensa_arcis
         sys.exit(1)
     soup = BeautifulSoup(mensa_html)
     
-    items = soup.findAll(u"item")
-    for i in items:
-        title = i.findAll(u"title")
-        if len(title) < 1:
-            print >>sys.stderr, u"Rss parse error."
-            sys.exit(1)
-        ret = date_re.search(title[0].text)
+    days = soup.findAll(u"table", attrs={u"class": u"menu"})
+    for d in days:
+        headline = d.findAll(u"td", attrs={u"class": u"headline"})
+        if len(headline) < 2:
+            error("Mensa parse error.")
+        headline = headline[1]
+        strhl = headline.findAll(u"strong")
+        if len(strhl) < 1:
+            error("Mensa parse error.")
+        ret = date_re.search(strhl[0].text)
         if not ret:
-            print >>sys.stderr, u"Rss date parse error."
-            sys.exit(1)
+            error("Mensa parse error.")
         day, month, year = ret.groups()
         now = datetime.date(int(year), int(month), int(day))
         
-        desc = i.findAll(u"description")
-        if len(desc) < 1:
-            print >>sys.stderr, u"Rss parse error."
-            sys.exit(1)
-        #if not ret:
-        #    print >>sys.stderr, u"Rss description parse error."
-        #    sys.exit(1)
-        #print ret.groups()
-        tx = desc_nl_rep_re.sub(u'\n', desc[0].text)
-        tx = tx.split(u'\n')
-        for m in tx:
-            m = m.lstrip(u"- ")
-            m = m.strip()
-            if m != u"":
-                try:
-                    tmp = config["meals"][now]
-                    config["meals"][now].append((TYPE_MENSA, m))
-                except KeyError, e:
-                    config["meals"][now] = [(TYPE_MENSA, m)]
+        meals = d.findAll(u"tr")
+        for m in meals:
+            if len(m.findAll(u"td", attrs={u"class": u"headline"})) > 0:
+                continue
+            typ = m.findAll(u"td", attrs={u"class": u"gericht"})
+            if len(typ) < 1:
+                error("Mensa parse error.")
+            price = -1
+            for match, value in mensa_price_mapping.items():
+                ret = re.search(match, typ[0].text)
+                if ret:
+                    price = value
+                    break
+            if price == -1:
+                error("Mensa parse error.")
+            
+            desc = m.findAll(u"td", attrs={u"class": u"beschreibung"})
+            if len(desc) < 1:
+                error("Mensa parse error.")
+            desc = desc[0].findAll(u"span", attrs={u"style": u"float:left"})
+            if len(desc) < 1:
+                error("Mensa parse error.")
+
+            t = desc[0].text
+            t = t.strip()
+
+            t += u" (%.2f €)" % (price)
+
+            try:
+                tmp = config["meals"][now]
+                config["meals"][now].append((TYPE_MENSA, t))
+            except KeyError, e:
+                config["meals"][now] = [(TYPE_MENSA, t)]
+
     config["last_update_mensa"] = datetime.date.today()
 
 def update_all():
