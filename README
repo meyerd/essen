@@ -6,7 +6,8 @@ certification. Will most likely break.
 
 A script to fetch the newest "Speiseplan" of the Max-Planck-Institut für Plasmaphysik
 canteen in Garching, Germany. Also fetches the newest "Mensa Speiselplan" of the 
-Studentenwerks-Mensa in Garching, Germany.
+Studentenwerks-Mensa in Archisstraße, Munich, Germany and the mealplan of the Ausgabe
+a small diner/pub in Theresienstraße, Munich, Germany.
 
 Then stores the results using python pickle to the file "~/.essen". Lookups whats to
 eat can also be done using this script.
