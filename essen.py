@@ -24,30 +24,30 @@ mensa_arcis = \
 config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
 
 mensa_price_mapping = {
-    u"Tagesgericht 1"   : 1.90,
-    u"Tagesgericht 2"   : 2.20,
-    u"Tagesgericht 3"   : 2.40,
-    u"Tagesgericht 4"   : 2.80,
-    u"Biogericht 1"     : 2.20,
-    u"Biogericht 2"     : 2.40,
-    u"Biogericht 3"     : 2.80,
-    u"Biogericht 4"     : 3.00,
-    u"Biogericht 5"     : 3.20,
-    u"Biogericht 6"     : 3.40,
-    u"Biogericht 7"     : 3.60,
-    u"Biogericht 8"     : 3.90,
-    u"Biogericht 9"     : 4.40,
-    u"Biogericht 10"    : 4.90,
-    u"Aktionsessen 1"   : 2.20,
-    u"Aktionsessen 2"   : 2.40,
-    u"Aktionsessen 3"   : 2.80,
-    u"Aktionsessen 4"   : 3.00,
-    u"Aktionsessen 5"   : 3.20,
-    u"Aktionsessen 6"   : 3.40,
-    u"Aktionsessen 7"   : 3.60,
-    u"Aktionsessen 8"   : 3.90,
-    u"Aktionsessen 9"   : 4.40,
-    u"Aktionsessen 10"  : 4.90}
+    u"Tagesgericht 1"   : (1.00, 1.90, 2.40),
+    u"Tagesgericht 2"   : (1.55, 2.20, 2.70),
+    u"Tagesgericht 3"   : (1.90, 2.40, 2.90),
+    u"Tagesgericht 4"   : (2.40, 2.80, 3.30),
+    u"Biogericht 1"     : (1.55, 2.20, 2.70),
+    u"Biogericht 2"     : (1.90, 2.40, 2.90),
+    u"Biogericht 3"     : (2.40, 2.80, 3.30),
+    u"Biogericht 4"     : (2.60, 3.00, 3.50),
+    u"Biogericht 5"     : (2.80, 3.20, 3.70),
+    u"Biogericht 6"     : (3.00, 3.40, 3.90),
+    u"Biogericht 7"     : (3.20, 3.60, 4.10),
+    u"Biogericht 8"     : (3.50, 3.90, 4.40),
+    u"Biogericht 9"     : (4.00, 4.40, 4.90),
+    u"Biogericht 10"    : (4.50, 4.90, 5.40),
+    u"Aktionsessen 1"   : (1.55, 2.20, 2.70),
+    u"Aktionsessen 2"   : (1.90, 2.40, 2.90),
+    u"Aktionsessen 3"   : (2.40, 2.80, 3.30),
+    u"Aktionsessen 4"   : (2.60, 3.00, 3.50),
+    u"Aktionsessen 5"   : (2.80, 3.20, 3.70),
+    u"Aktionsessen 6"   : (3.00, 3.40, 3.90),
+    u"Aktionsessen 7"   : (3.20, 3.60, 4.10),
+    u"Aktionsessen 8"   : (3.50, 3.90, 4.40),
+    u"Aktionsessen 9"   : (4.00, 4.40, 4.90),
+    u"Aktionsessen 10"  : (4.50, 4.90, 5.40)}
 
 class bcolors:
     HEADER = ''
@@ -112,7 +112,7 @@ def dump_all_meals():
                 print " AUS",
             else:
                 print " MEN",
-            print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+            print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def dump_one_day_meals(date):
     dates = config["meals"].keys()
@@ -128,7 +128,7 @@ def dump_one_day_meals(date):
                     print " AUS",
                 else:
                     print " MEN",
-                print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+                print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 
 def show_last_update():
@@ -376,7 +376,7 @@ def get_new_mensa():
             for match, value in mensa_price_mapping.items():
                 ret = re.search(match, typ[0].text)
                 if ret:
-                    price = value
+                    price = value[config["person"]]
                     break
             if price == -1:
                 error("Mensa parse error.")
@@ -504,6 +504,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-u', action='store_true', default=False,
                         help='Update the database')
+    parser.add_argument('-p', dest='person', default='',
+                        help="Personal status (student|employee|guest)")
     parser.add_argument('date', 
             metavar='DATE', 
             nargs='?',
@@ -512,15 +514,30 @@ if __name__ == '__main__':
 
     opts = parser.parse_args()
 
-    if opts.u:
-        update_all()
-
     if os.path.isfile(config_file):
         load_config(config_file)
-    else:
+    elif not opts.u:
         print >>sys.stderr, bcolors.FAIL + "No configfile found. " \
                 "You may want to run an update." + bcolors.ENDC
         sys.exit(1)
+
+    if opts.person:
+        if opts.person == "student":
+            config["person"] = 0
+        elif opts.person == "employee":
+            config["person"] = 1
+        elif opts.person == "guest":
+            config["person"] = 2
+        else:
+            print >>sys.stderr, bcolors.FAIL + "Unknown option given to " \
+                    "-p" + bcolors.ENDC
+            sys.exit(1)
+
+    if "person" not in config:
+        config["person"] = 0
+
+    if opts.u or opts.person:
+        update_all()
     
     if datetime.date.today() - config["last_update_mensa"] > \
        datetime.timedelta(days=6) or \
@@ -533,17 +550,11 @@ if __name__ == '__main__':
         update_all()
     
     if opts.date is None:
-        if datetime.date.today().weekday() == 2:
-            print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" \
-                    + bcolors.ENDC
         dump_one_day_meals(datetime.date.today())
         sys.exit(0)
 
     if opts.date == "all":
         dump_all_meals()
         sys.exit(0)
-
-    if opts.date.weekday() == 2:
-        print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" + bcolors.ENDC
 
     dump_one_day_meals(opts.date)
