@@ -533,9 +533,6 @@ if __name__ == '__main__':
         update_all()
     
     if opts.date is None:
-        if datetime.date.today().weekday() == 2:
-            print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" \
-                    + bcolors.ENDC
         dump_one_day_meals(datetime.date.today())
         sys.exit(0)
 
