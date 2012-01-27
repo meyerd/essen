@@ -557,7 +557,4 @@ if __name__ == '__main__':
         dump_all_meals()
         sys.exit(0)
 
-    if opts.date.weekday() == 2:
-        print bcolors.HEADER + "Wednesday: IPP: CHEESEBURGERS!!" + bcolors.ENDC
-
     dump_one_day_meals(opts.date)
