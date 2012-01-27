@@ -112,7 +112,7 @@ def dump_all_meals():
                 print " AUS",
             else:
                 print " MEN",
-            print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+            print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def dump_one_day_meals(date):
     dates = config["meals"].keys()
@@ -128,7 +128,7 @@ def dump_one_day_meals(date):
                     print " AUS",
                 else:
                     print " MEN",
-                print " - %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+                print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 
 def show_last_update():
