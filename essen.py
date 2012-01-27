@@ -404,8 +404,6 @@ def get_new_mensa():
 def update_all():
     print >>sys.stderr, u"Updating..."
     config["meals"] = {}
-    if "person" not in config:
-        config["person"] = 0
     get_new_mensa()
     get_new_loske()
     get_new_ausgabe()
@@ -516,6 +514,13 @@ if __name__ == '__main__':
 
     opts = parser.parse_args()
 
+    if os.path.isfile(config_file):
+        load_config(config_file)
+    elif not opts.u:
+        print >>sys.stderr, bcolors.FAIL + "No configfile found. " \
+                "You may want to run an update." + bcolors.ENDC
+        sys.exit(1)
+
     if opts.person:
         if opts.person == "student":
             config["person"] = 0
@@ -528,16 +533,11 @@ if __name__ == '__main__':
                     "-p" + bcolors.ENDC
             sys.exit(1)
 
+    if "person" not in config:
+        config["person"] = 0
+
     if opts.u or opts.person:
         update_all()
-
-    if os.path.isfile(config_file):
-        load_config(config_file)
-    else:
-        print >>sys.stderr, bcolors.FAIL + "No configfile found. " \
-                "You may want to run an update." + bcolors.ENDC
-        sys.exit(1)
-
     
     if datetime.date.today() - config["last_update_mensa"] > \
        datetime.timedelta(days=6) or \
