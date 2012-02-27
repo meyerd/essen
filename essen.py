@@ -203,12 +203,12 @@ def get_new_loske():
         sys.exit(1)
     soup = BeautifulSoup(loske_html)
     # print soup.prettify()
-    tds = soup.findAll(u'td', attrs={u'class' : u'csc-uploads-fileName'})
+    tables = soup.findAll(u'table', attrs={u'class' : u'csc-uploads csc-uploads-0'})
     thisweek_url = ""
-    if len(tds) < 2:
+    if len(tables) < 2:
         print >>sys.stderr, u"Parse html error"
         sys.exit(1)
-    alla = tds[0].findAll('a')
+    alla = tables[0].findAll('a')
     if len(alla) < 1:
         print >>sys.stderr, u"Parse html error"
         sys.exit(1)
@@ -224,7 +224,7 @@ def get_new_loske():
     parse_loske_pdf(pdf)
 
     nextweek_url = ""
-    alla = tds[1].findAll('a')
+    alla = tables[1].findAll('a')
     if len(alla) < 1:
         print >>sys.stderr, u"Parse html error"
         sys.exit(1)
