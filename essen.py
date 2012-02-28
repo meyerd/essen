@@ -19,8 +19,10 @@ consolewidth = 79
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
 ausgabe_mittagskarte = u"http://www.protutti.com/firmen/M/Ausgabe/upfile/Wochenkarte.pdf"
-mensa_arcis = \
-    u"http://www.studentenwerk-muenchen.de/mensa/speiseplan/speiseplan_421_-de.html"
+mensa = \
+    u"http://www.studentenwerk-muenchen.de/mensa/speiseplan/speiseplan_{0}_-de.html"
+mensa_id = {"arcisstr": 421,
+            "garching": 422}
 config_file = os.path.expanduser(os.path.join(u"~", u".essen"))
 
 mensa_price_mapping = {
@@ -344,9 +346,10 @@ def get_new_mensa():
     desc_nl_rep_re = re.compile(u"<br>")
 
     wc = WebCursor();
-    mensa_html = wc.get(mensa_arcis)
+    mensa_url = mensa.format(mensa_id[config["mensa_location"]])
+    mensa_html = wc.get(mensa_url)
     if mensa_html == "":
-        print >>sys.stderr, u"Could not download" , mensa_arcis
+        print >>sys.stderr, u"Could not download" , mensa_url
         sys.exit(1)
     soup = BeautifulSoup(mensa_html)
     
@@ -506,6 +509,8 @@ if __name__ == '__main__':
                         help='Update the database')
     parser.add_argument('-p', dest='person', default='',
                         help="Personal status (student|employee|guest)")
+    parser.add_argument('--ml', dest='mensa_location', choices=mensa_id.keys(),
+                        help="Choose your mensa location")
     parser.add_argument('date', 
             metavar='DATE', 
             nargs='?',
@@ -533,10 +538,15 @@ if __name__ == '__main__':
                     "-p" + bcolors.ENDC
             sys.exit(1)
 
+    if opts.mensa_location:
+        config["mensa_location"] = opts.mensa_location
+
     if "person" not in config:
         config["person"] = 0
+    if "mensa_location" not in config:
+        config["mensa_location"] = "arcisstr"
 
-    if opts.u or opts.person:
+    if opts.u or opts.person or opts.mensa_location:
         update_all()
     
     if datetime.date.today() - config["last_update_mensa"] > \
