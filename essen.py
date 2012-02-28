@@ -77,6 +77,9 @@ class bcolors:
         self.ENDC = ''
 
 TYPE_AUS, TYPE_IPP, TYPE_MENSA = range(3)
+type_translation = {"AUS": TYPE_AUS,
+                    "IPP": TYPE_IPP,
+                    "MEN": TYPE_MENSA}
 
 config = {}
 config["last_update_ipp"] = datetime.date(1,1,1)
@@ -101,11 +104,16 @@ def load_config(filename):
         config = pickle.load(fp)
     fp.close()
 
+def filter_meals(date):
+    for t, s in config["meals"][date]:
+        if t in config["locations"]:
+            yield t, s
+
 def dump_all_meals():
     dates = sorted(config["meals"].keys())
     for d in dates:
         print u"%s:" % (str(d)) 
-        for m in config["meals"][d]:
+        for m in filter_meals(d):
             t, s = m
             sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
             if t is TYPE_IPP:
@@ -121,7 +129,7 @@ def dump_one_day_meals(date):
     for d in dates:
         if d == date:
             print u"%s:" % (str(d)) 
-            for m in config["meals"][d]:
+            for m in filter_meals(d):
                 t, s = m
                 sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
                 if t is TYPE_IPP:
@@ -511,6 +519,9 @@ if __name__ == '__main__':
                         help="Personal status (student|employee|guest)")
     parser.add_argument('--ml', dest='mensa_location', choices=mensa_id.keys(),
                         help="Choose your mensa location")
+    parser.add_argument('-l', '--locations', metavar="L1:L2:...",
+                        help="Locations to print " \
+                        "({0})".format('|'.join(type_translation.keys())))
     parser.add_argument('date', 
             metavar='DATE', 
             nargs='?',
@@ -541,10 +552,19 @@ if __name__ == '__main__':
     if opts.mensa_location:
         config["mensa_location"] = opts.mensa_location
 
+    if opts.locations:
+        config["locations"] = [type_translation[l] for l in \
+                               opts.locations.split(':') \
+                               if l in type_translation]
+        save_config(config_file)
+
     if "person" not in config:
         config["person"] = 0
     if "mensa_location" not in config:
         config["mensa_location"] = "arcisstr"
+    if "locations" not in config:
+        config["locations"] = type_translation.values()
+        save_config(config_file)
 
     if opts.u or opts.person or opts.mensa_location:
         update_all()
