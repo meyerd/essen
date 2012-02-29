@@ -533,8 +533,11 @@ if __name__ == '__main__':
     if os.path.isfile(config_file):
         load_config(config_file)
     elif not opts.u:
-        print >>sys.stderr, bcolors.FAIL + "No configfile found. " \
-                "You may want to run an update." + bcolors.ENDC
+        print >>sys.stderr, bcolors.FAIL + "No configfile found.\n" + \
+                bcolors.ENDC + "You need to update and perform basic " \
+                "setup.\nFor example if you are a student in Garching run:\n" \
+                + sys.argv[0] + " -u -p student --ml garching -l MEN:IPP\n" \
+                "See " + sys.argv[0] + " -h for more info"
         sys.exit(1)
 
     if opts.person:
