@@ -415,9 +415,12 @@ def get_new_mensa():
 def update_all():
     print >>sys.stderr, u"Updating..."
     config["meals"] = {}
-    get_new_mensa()
-    get_new_loske()
-    get_new_ausgabe()
+    if TYPE_MENSA in config["locations"]:
+        get_new_mensa()
+    if TYPE_IPP in config["locations"]:
+        get_new_loske()
+    if TYPE_AUS in config["locations"]:
+        get_new_ausgabe()
     save_config(config_file)
 
 
@@ -572,12 +575,12 @@ if __name__ == '__main__':
     if opts.u or opts.person or opts.mensa_location:
         update_all()
     
-    if datetime.date.today() - config["last_update_mensa"] > \
-       datetime.timedelta(days=6) or \
-       datetime.date.today() - config["last_update_ipp"] > \
-       datetime.timedelta(days=6) or \
-       datetime.date.today() - config["last_update_aus"] > \
-       datetime.timedelta(days=6):
+    if (datetime.date.today() - config["last_update_mensa"] > \
+       datetime.timedelta(days=6) and TYPE_MENSA in config["locations"]) or \
+       (datetime.date.today() - config["last_update_ipp"] > \
+       datetime.timedelta(days=6) and TYPE_IPP in config["locations"]) or \
+       (datetime.date.today() - config["last_update_aus"] > \
+       datetime.timedelta(days=6) and TYPE_AUS in config["locations"]):
         print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 " \
                 "days ago." + bcolors.ENDC
         update_all()
