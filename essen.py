@@ -352,6 +352,7 @@ def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
     desc_nl_rep_re = re.compile(u"<br>")
+    foodtags_re = re.compile(ur"(?: \([0-9vf,]*\))*$")
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -401,6 +402,7 @@ def get_new_mensa():
 
             t = desc[0].text
             t = t.strip()
+            t = foodtags_re.sub('', t)
 
             t += u" (%.2f €)" % (price)
 
