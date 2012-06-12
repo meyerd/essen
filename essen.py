@@ -352,6 +352,7 @@ def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
     desc_nl_rep_re = re.compile(u"<br>")
+    foodtags_re = re.compile(ur"(?: \([0-9vf,]*\))*$")
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -401,6 +402,7 @@ def get_new_mensa():
 
             t = desc[0].text
             t = t.strip()
+            t = foodtags_re.sub('', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
 
             t += u" (%.2f €)" % (price)
@@ -575,15 +577,16 @@ if __name__ == '__main__':
 
     if opts.u or opts.person or opts.mensa_location:
         update_all()
-    
-    if (datetime.date.today() - config["last_update_mensa"] > \
-       datetime.timedelta(days=6) and TYPE_MENSA in config["locations"]) or \
-       (datetime.date.today() - config["last_update_ipp"] > \
-       datetime.timedelta(days=6) and TYPE_IPP in config["locations"]) or \
-       (datetime.date.today() - config["last_update_aus"] > \
-       datetime.timedelta(days=6) and TYPE_AUS in config["locations"]):
-        print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 " \
-                "days ago." + bcolors.ENDC
+
+    current_week = datetime.date.today().isocalendar()[1]
+    if ((current_week != config["last_update_mensa"].isocalendar()[1] and
+         TYPE_MENSA in config["locations"]) or
+        (current_week != config["last_update_ipp"].isocalendar()[1] and
+         TYPE_IPP in config["locations"]) or
+        (current_week != config["last_update_aus"].isocalendar()[1] and
+         TYPE_AUS in config["locations"])):
+        print >>sys.stderr, (bcolors.WARNING + "Last update was not in this "
+                "week." + bcolors.ENDC)
         update_all()
     
     if opts.date is None:
