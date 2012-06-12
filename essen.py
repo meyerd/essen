@@ -160,6 +160,8 @@ def parse_loske_pdf(pdf):
     meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)")
     #meal_detect_re = re.compile(u"(\d\.)(\D)")
     date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
+    meal_props = re.compile(ur'\b[VRS](?:\+[VRS])*\b\s*')
+    meal_numbers = re.compile(ur'\s*\b[0-6](?:,[0-6])*\b')
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -197,8 +199,17 @@ def parse_loske_pdf(pdf):
         if ret:
             day, month, year, meals = ret.groups()
             now = datetime.date(int(year), int(month), int(day))
-            meals = meal_detect_re.sub(ur'\n\2(\3,\4 €)', meals).strip()
-            for m in meals.split(u'\n'):
+            #meals = meal_detect_re.sub(ur'\n\2(\3.\4 €)', meals).strip()
+            meals = meal_detect_re.finditer(meals)
+            for meal_match in meals:
+                m = meal_match.group(2)
+                m = meal_props.sub(u'', m)
+                m = meal_numbers.sub(u'', m)
+                m = m.replace(u'*', u'')
+                m = m.split()
+                m.append(u'({0}.{1} €)'.format(meal_match.group(3),
+                                               meal_match.group(4)))
+                m = u' '.join(m)
                 try:
                     tmp = config["meals"][now]
                     config["meals"][now].append((TYPE_IPP, m))
@@ -352,7 +363,7 @@ def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
     desc_nl_rep_re = re.compile(u"<br>")
-    foodtags_re = re.compile(ur"(?: \([0-9vf,]*\))*$")
+    foodtags_re = re.compile(ur"(?:\s*\([0-9vfS](?:,[0-9vfS])*\))")
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -402,10 +413,11 @@ def get_new_mensa():
 
             t = desc[0].text
             t = t.strip()
-            t = foodtags_re.sub('', t)
+            t = foodtags_re.sub(u'', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
-
-            t += u" (%.2f €)" % (price)
+            t = t.split()
+            t.append(u"(%.2f €)" % (price,))
+            t = ' '.join(t)
 
             try:
                 tmp = config["meals"][now]
