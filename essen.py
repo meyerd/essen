@@ -577,15 +577,16 @@ if __name__ == '__main__':
 
     if opts.u or opts.person or opts.mensa_location:
         update_all()
-    
-    if (datetime.date.today() - config["last_update_mensa"] > \
-       datetime.timedelta(days=6) and TYPE_MENSA in config["locations"]) or \
-       (datetime.date.today() - config["last_update_ipp"] > \
-       datetime.timedelta(days=6) and TYPE_IPP in config["locations"]) or \
-       (datetime.date.today() - config["last_update_aus"] > \
-       datetime.timedelta(days=6) and TYPE_AUS in config["locations"]):
-        print >>sys.stderr, bcolors.WARNING + "Last update was more than 6 " \
-                "days ago." + bcolors.ENDC
+
+    current_week = datetime.date.today().isocalendar()[1]
+    if ((current_week != config["last_update_mensa"].isocalendar()[1] and
+         TYPE_MENSA in config["locations"]) or
+        (current_week != config["last_update_ipp"].isocalendar()[1] and
+         TYPE_IPP in config["locations"]) or
+        (current_week != config["last_update_aus"].isocalendar()[1] and
+         TYPE_AUS in config["locations"])):
+        print >>sys.stderr, (bcolors.WARNING + "Last update was not in this "
+                "week." + bcolors.ENDC)
         update_all()
     
     if opts.date is None:
