@@ -403,6 +403,7 @@ def get_new_mensa():
             t = desc[0].text
             t = t.strip()
             t = foodtags_re.sub('', t)
+            t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
 
             t += u" (%.2f €)" % (price)
 
