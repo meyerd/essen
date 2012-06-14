@@ -109,13 +109,19 @@ def filter_meals(date):
         if t in config["locations"]:
             yield t, s
 
+def unicodewrap(string, width):
+    # textwrap.wrap handles unicode non-breakable spaces incorrectly
+    # so we need to encode before and decode after textwrap.wrap
+    l = textwrap.wrap(string.encode('utf-8'), width)
+    return [el.decode('utf-8') for el in l]
+
 def dump_all_meals():
     dates = sorted(config["meals"].keys())
     for d in dates:
         print u"%s:" % (str(d)) 
         for m in filter_meals(d):
             t, s = m
-            sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
+            sb = u'\n       '.join(unicodewrap(s, consolewidth-7))
             if t is TYPE_IPP:
                 print " IPP",
             elif t is TYPE_AUS:
@@ -131,7 +137,7 @@ def dump_one_day_meals(date):
             print u"%s:" % (str(d)) 
             for m in filter_meals(d):
                 t, s = m
-                sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
+                sb = u'\n       '.join(unicodewrap(s, consolewidth-7))
                 if t is TYPE_IPP:
                     print " IPP",
                 elif t is TYPE_AUS:
@@ -161,7 +167,7 @@ def parse_loske_pdf(pdf):
     #meal_detect_re = re.compile(u"(\d\.)(\D)")
     date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
     meal_props = re.compile(ur'\b[VRS](?:\+[VRS])*\b\s*')
-    meal_numbers = re.compile(ur'\s*\b[0-6](?:,[0-6])*\b')
+    meal_numbers = re.compile(ur'([^/]|^)\s*\b[1-6](?:,[1-6])*\b([^/]|$)')
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -199,15 +205,15 @@ def parse_loske_pdf(pdf):
         if ret:
             day, month, year, meals = ret.groups()
             now = datetime.date(int(year), int(month), int(day))
-            #meals = meal_detect_re.sub(ur'\n\2(\3.\4 €)', meals).strip()
+            #meals = meal_detect_re.sub(ur'\n\2(\3.\4 €)', meals).strip()
             meals = meal_detect_re.finditer(meals)
             for meal_match in meals:
                 m = meal_match.group(2)
                 m = meal_props.sub(u'', m)
-                m = meal_numbers.sub(u'', m)
+                m = meal_numbers.sub(lambda x : x.group(1) + x.group(2), m)
                 m = m.replace(u'*', u'')
                 m = m.split()
-                m.append(u'({0}.{1} €)'.format(meal_match.group(3),
+                m.append(u'({0}.{1} €)'.format(meal_match.group(3),
                                                meal_match.group(4)))
                 m = u' '.join(m)
                 try:
@@ -340,7 +346,7 @@ def parse_ausgabe_pdf(pdf):
             now_dow = datetime.date.today().weekday()
             dow_diff = dow - now_dow
             now = datetime.date.today() + datetime.timedelta(dow_diff)
-            meals = meal_detect_re.sub(ur' (\1,\2 €)\n', meals).strip()
+            meals = meal_detect_re.sub(ur' (\1,\2 €)\n', meals).strip()
             for m in meals.split(u'\n'):
                 try:
                     tmp = config["meals"][now]
@@ -416,7 +422,7 @@ def get_new_mensa():
             t = foodtags_re.sub(u'', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
             t = t.split()
-            t.append(u"(%.2f €)" % (price,))
+            t.append(u"(%.2f €)" % (price,))
             t = ' '.join(t)
 
             try:
