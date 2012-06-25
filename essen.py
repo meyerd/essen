@@ -546,6 +546,10 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--locations', metavar="L1:L2:...",
                         help="Locations to print " \
                         "({0})".format('|'.join(type_translation.keys())))
+    parser.add_argument('--na', '--no-autoupdate', dest='autoupdate',
+                        default=True, action='store_false',
+                        help="Disable autoupdate (useful when no internet "
+                        "connection is available)")
     parser.add_argument('date', 
             metavar='DATE', 
             nargs='?',
@@ -597,12 +601,13 @@ if __name__ == '__main__':
         update_all()
 
     current_week = datetime.date.today().isocalendar()[1]
-    if ((current_week != config["last_update_mensa"].isocalendar()[1] and
-         TYPE_MENSA in config["locations"]) or
-        (current_week != config["last_update_ipp"].isocalendar()[1] and
-         TYPE_IPP in config["locations"]) or
-        (current_week != config["last_update_aus"].isocalendar()[1] and
-         TYPE_AUS in config["locations"])):
+    if (opts.autoupdate and
+        ((current_week != config["last_update_mensa"].isocalendar()[1] and
+          TYPE_MENSA in config["locations"]) or
+         (current_week != config["last_update_ipp"].isocalendar()[1] and
+          TYPE_IPP in config["locations"]) or
+         (current_week != config["last_update_aus"].isocalendar()[1] and
+          TYPE_AUS in config["locations"]))):
         print >>sys.stderr, (bcolors.WARNING + "Last update was not in this "
                 "week." + bcolors.ENDC)
         update_all()
