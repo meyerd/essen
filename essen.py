@@ -166,7 +166,7 @@ def parse_loske_pdf(pdf):
     meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)")
     #meal_detect_re = re.compile(u"(\d\.)(\D)")
     date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
-    meal_props = re.compile(ur'\b[VRS](?:\+[VRS])*\b\s*')
+    meal_props = re.compile(ur'\b[VKRS](?:\+[VKRS])*\b\s*')
     meal_numbers = re.compile(ur'([^/]|^)\s*\b[1-6](?:,[1-6])*\b([^/]|$)')
 
     rsrcmgr = PDFResourceManager()
