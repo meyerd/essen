@@ -157,17 +157,19 @@ def remove_older(when):
             del config["meals"][k]
 
 def parse_loske_pdf(pdf):
-    stripcid_re = re.compile(u"\(cid:.*?\)")
+    stripcid_re = re.compile(u"\(cid:.*?\)", re.UNICODE)
     newline_heuristic_re = re.compile(u"Montag, den |Dienstag, den |Mittwoch" \
                                       u", den |Donnerstag, den |Freitag, den ",
-                                      re.IGNORECASE)
-    bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*")
-    dow_beginheuristic_re = re.compile(u".*?Montag, den ", re.IGNORECASE)
-    meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)")
-    #meal_detect_re = re.compile(u"(\d\.)(\D)")
-    date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
-    meal_props = re.compile(ur'\b[VKRS](?:\+[VKRS])*\b\s*')
-    meal_numbers = re.compile(ur'([^/]|^)\s*\b[1-6](?:,[1-6])*\b([^/]|$)')
+                                      re.IGNORECASE | re.UNICODE)
+    bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*", re.UNICODE)
+    dow_beginheuristic_re = re.compile(u".*?Montag, den ",
+                                       re.IGNORECASE | re.UNICODE)
+    meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)", re.UNICODE)
+    #meal_detect_re = re.compile(u"(\d\.)(\D)", re.UNICODE)
+    date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)", re.UNICODE)
+    meal_props = re.compile(ur'\b[VKRS](?:\+[VKRS])*\b\s*', re.UNICODE)
+    meal_numbers = re.compile(ur'([^/]|^)\s*\b[1-6](?:,[1-6])*\b([^/]|$)',
+                              re.UNICODE)
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -269,11 +271,11 @@ def get_new_loske():
     config["last_update_ipp"] = datetime.date.today()
 
 def dow_to_int(dow):
-    montag_re = re.compile(u"Montag", re.IGNORECASE)
-    dienstag_re = re.compile(u"Dienstag", re.IGNORECASE)
-    mittwoch_re = re.compile(u"Mittwoch", re.IGNORECASE)
-    donnerstag_re = re.compile(u"Donnerstag", re.IGNORECASE)
-    freitag_re = re.compile(u"Freitag", re.IGNORECASE)
+    montag_re = re.compile(u"Montag", re.IGNORECASE | re.UNICODE)
+    dienstag_re = re.compile(u"Dienstag", re.IGNORECASE | re.UNICODE)
+    mittwoch_re = re.compile(u"Mittwoch", re.IGNORECASE | re.UNICODE)
+    donnerstag_re = re.compile(u"Donnerstag", re.IGNORECASE | re.UNICODE)
+    freitag_re = re.compile(u"Freitag", re.IGNORECASE | re.UNICODE)
 
     ret = montag_re.search(dow)
     if ret:
@@ -294,16 +296,19 @@ def dow_to_int(dow):
     return -1
 
 def parse_ausgabe_pdf(pdf):
-    stripcid_re = re.compile(u"\(cid:.*?\)")
+    stripcid_re = re.compile(u"\(cid:.*?\)", re.UNICODE)
     newline_heuristic_re = re.compile(u"(?:\u20ac)?(Montag|Dienstag|Mittwoch" \
                                       u"|Donnerstag|Freitag)",
-                                      re.IGNORECASE)
-    guapp_endheuristic_re = re.compile(u"Guten Appetit.*")
-    dow_beginheuristic_re = re.compile(u".*?(Montag)", re.IGNORECASE)
-    meal_detect_re = re.compile(u" *?(\d+),(\d\d).*?(?:\*\d+,\d\d€?)")
-    #meal_detect_re = re.compile(u"(\d\.)(\D)")
-    date_re = re.compile(u"(Montag|Dienstag|Mittwoch|Donnerstag|Freitag)(.*)")
-    whitespace_re = re.compile(u"^[ \t\n]*$")
+                                      re.IGNORECASE | re.UNICODE)
+    guapp_endheuristic_re = re.compile(u"Guten Appetit.*", re.UNICODE)
+    dow_beginheuristic_re = re.compile(u".*?(Montag)",
+                                       re.IGNORECASE | re.UNICODE)
+    meal_detect_re = re.compile(u" *?(\d+),(\d\d).*?(?:\*\d+,\d\d€?)",
+                                re.UNICODE)
+    #meal_detect_re = re.compile(u"(\d\.)(\D)", re.UNICODE)
+    date_re = re.compile(u"(Montag|Dienstag|Mittwoch|Donnerstag|Freitag)(.*)",
+                         re.UNICODE)
+    whitespace_re = re.compile(u"^[ \t\n]*$", re.UNICODE)
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -366,10 +371,10 @@ def get_new_ausgabe():
     config["last_update_aus"] = datetime.date.today()
 
 def get_new_mensa():
-    date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
-    desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
-    desc_nl_rep_re = re.compile(u"<br>")
-    foodtags_re = re.compile(ur"(?:\s*\([0-9vfS](?:,[0-9vfS])*\))")
+    date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})", re.UNICODE)
+    desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*", re.UNICODE)
+    desc_nl_rep_re = re.compile(u"<br>", re.UNICODE)
+    foodtags_re = re.compile(ur"(?:\s*\([0-9vfS](?:,[0-9vfS])*\))", re.UNICODE)
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -462,14 +467,14 @@ if __name__ == '__main__':
             epilog='Warning! Extremely hacky, it will most likely break!')
 
     def is_a_date(string):
-        date_re = re.compile(u'(\d{1,2})\.(\d{1,2})\.(\d{1,4})')
-        shortdate_re = re.compile(u'(\d{1,2})\.(\d{1,2})')
+        date_re = re.compile(u'(\d{1,2})\.(\d{1,2})\.(\d{1,4})', re.UNICODE)
+        shortdate_re = re.compile(u'(\d{1,2})\.(\d{1,2})', re.UNICODE)
         day_re = re.compile(u'(mo|di|mi|do|fr|sa|so|Montag|Dienstag|Mittwoch' \
                             u'|Donnerstag|Freitag|Samstag|Sonntag)',
-                            re.IGNORECASE)
-        daynum_re = re.compile(u'(\d{1,2})')
-        all_re = re.compile(u'all', re.IGNORECASE)
-        morgen_re = re.compile(u'morgen', re.IGNORECASE)
+                            re.IGNORECASE | re.UNICODE)
+        daynum_re = re.compile(u'(\d{1,2})', re.UNICODE)
+        all_re = re.compile(u'all', re.IGNORECASE | re.UNICODE)
+        morgen_re = re.compile(u'morgen', re.IGNORECASE | re.UNICODE)
         matched = False
         ret = None    
 
