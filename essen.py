@@ -109,13 +109,19 @@ def filter_meals(date):
         if t in config["locations"]:
             yield t, s
 
+def unicodewrap(string, width):
+    # textwrap.wrap handles unicode non-breakable spaces incorrectly
+    # so we need to encode before and decode after textwrap.wrap
+    l = textwrap.wrap(string.encode('utf-8'), width)
+    return [el.decode('utf-8') for el in l]
+
 def dump_all_meals():
     dates = sorted(config["meals"].keys())
     for d in dates:
         print u"%s:" % (str(d)) 
         for m in filter_meals(d):
             t, s = m
-            sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
+            sb = u'\n       '.join(unicodewrap(s, consolewidth-7))
             if t is TYPE_IPP:
                 print " IPP",
             elif t is TYPE_AUS:
@@ -131,7 +137,7 @@ def dump_one_day_meals(date):
             print u"%s:" % (str(d)) 
             for m in filter_meals(d):
                 t, s = m
-                sb = u'\n       '.join(textwrap.wrap(s, consolewidth-7))
+                sb = u'\n       '.join(unicodewrap(s, consolewidth-7))
                 if t is TYPE_IPP:
                     print " IPP",
                 elif t is TYPE_AUS:
@@ -151,15 +157,19 @@ def remove_older(when):
             del config["meals"][k]
 
 def parse_loske_pdf(pdf):
-    stripcid_re = re.compile(u"\(cid:.*?\)")
+    stripcid_re = re.compile(u"\(cid:.*?\)", re.UNICODE)
     newline_heuristic_re = re.compile(u"Montag, den |Dienstag, den |Mittwoch" \
                                       u", den |Donnerstag, den |Freitag, den ",
-                                      re.IGNORECASE)
-    bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*")
-    dow_beginheuristic_re = re.compile(u".*?Montag, den ", re.IGNORECASE)
-    meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)")
-    #meal_detect_re = re.compile(u"(\d\.)(\D)")
-    date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)")
+                                      re.IGNORECASE | re.UNICODE)
+    bnw_endheuristic_re = re.compile(u"B\.n\.W\.=Beilage.*", re.UNICODE)
+    dow_beginheuristic_re = re.compile(u".*?Montag, den ",
+                                       re.IGNORECASE | re.UNICODE)
+    meal_detect_re = re.compile(u"(\d\.)(.*?)(\d).(\d\d)", re.UNICODE)
+    #meal_detect_re = re.compile(u"(\d\.)(\D)", re.UNICODE)
+    date_re = re.compile(u"(\d{1,2})\.(\d{1,2})\.(\d{1,4})(.*)", re.UNICODE)
+    meal_props = re.compile(ur'\b[VKRS](?:\+[VKRS])*\b\s*', re.UNICODE)
+    meal_numbers = re.compile(ur'([^/]|^)\s*\b[1-6](?:,[1-6])*\b([^/]|$)',
+                              re.UNICODE)
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -197,8 +207,17 @@ def parse_loske_pdf(pdf):
         if ret:
             day, month, year, meals = ret.groups()
             now = datetime.date(int(year), int(month), int(day))
-            meals = meal_detect_re.sub(ur'\n\2(\3,\4 €)', meals).strip()
-            for m in meals.split(u'\n'):
+            #meals = meal_detect_re.sub(ur'\n\2(\3.\4 €)', meals).strip()
+            meals = meal_detect_re.finditer(meals)
+            for meal_match in meals:
+                m = meal_match.group(2)
+                m = meal_props.sub(u'', m)
+                m = meal_numbers.sub(lambda x : x.group(1) + x.group(2), m)
+                m = m.replace(u'*', u'')
+                m = m.split()
+                m.append(u'({0}.{1} €)'.format(meal_match.group(3),
+                                               meal_match.group(4)))
+                m = u' '.join(m)
                 try:
                     tmp = config["meals"][now]
                     config["meals"][now].append((TYPE_IPP, m))
@@ -252,11 +271,11 @@ def get_new_loske():
     config["last_update_ipp"] = datetime.date.today()
 
 def dow_to_int(dow):
-    montag_re = re.compile(u"Montag", re.IGNORECASE)
-    dienstag_re = re.compile(u"Dienstag", re.IGNORECASE)
-    mittwoch_re = re.compile(u"Mittwoch", re.IGNORECASE)
-    donnerstag_re = re.compile(u"Donnerstag", re.IGNORECASE)
-    freitag_re = re.compile(u"Freitag", re.IGNORECASE)
+    montag_re = re.compile(u"Montag", re.IGNORECASE | re.UNICODE)
+    dienstag_re = re.compile(u"Dienstag", re.IGNORECASE | re.UNICODE)
+    mittwoch_re = re.compile(u"Mittwoch", re.IGNORECASE | re.UNICODE)
+    donnerstag_re = re.compile(u"Donnerstag", re.IGNORECASE | re.UNICODE)
+    freitag_re = re.compile(u"Freitag", re.IGNORECASE | re.UNICODE)
 
     ret = montag_re.search(dow)
     if ret:
@@ -277,16 +296,19 @@ def dow_to_int(dow):
     return -1
 
 def parse_ausgabe_pdf(pdf):
-    stripcid_re = re.compile(u"\(cid:.*?\)")
+    stripcid_re = re.compile(u"\(cid:.*?\)", re.UNICODE)
     newline_heuristic_re = re.compile(u"(?:\u20ac)?(Montag|Dienstag|Mittwoch" \
                                       u"|Donnerstag|Freitag)",
-                                      re.IGNORECASE)
-    guapp_endheuristic_re = re.compile(u"Guten Appetit.*")
-    dow_beginheuristic_re = re.compile(u".*?(Montag)", re.IGNORECASE)
-    meal_detect_re = re.compile(u" *?(\d+),(\d\d).*?(?:\*\d+,\d\d€?)")
-    #meal_detect_re = re.compile(u"(\d\.)(\D)")
-    date_re = re.compile(u"(Montag|Dienstag|Mittwoch|Donnerstag|Freitag)(.*)")
-    whitespace_re = re.compile(u"^[ \t\n]*$")
+                                      re.IGNORECASE | re.UNICODE)
+    guapp_endheuristic_re = re.compile(u"Guten Appetit.*", re.UNICODE)
+    dow_beginheuristic_re = re.compile(u".*?(Montag)",
+                                       re.IGNORECASE | re.UNICODE)
+    meal_detect_re = re.compile(u" *?(\d+),(\d\d).*?(?:\*\d+,\d\d€?)",
+                                re.UNICODE)
+    #meal_detect_re = re.compile(u"(\d\.)(\D)", re.UNICODE)
+    date_re = re.compile(u"(Montag|Dienstag|Mittwoch|Donnerstag|Freitag)(.*)",
+                         re.UNICODE)
+    whitespace_re = re.compile(u"^[ \t\n]*$", re.UNICODE)
 
     rsrcmgr = PDFResourceManager()
     outtxt = cStringIO.StringIO()
@@ -329,7 +351,7 @@ def parse_ausgabe_pdf(pdf):
             now_dow = datetime.date.today().weekday()
             dow_diff = dow - now_dow
             now = datetime.date.today() + datetime.timedelta(dow_diff)
-            meals = meal_detect_re.sub(ur' (\1,\2 €)\n', meals).strip()
+            meals = meal_detect_re.sub(ur' (\1,\2 €)\n', meals).strip()
             for m in meals.split(u'\n'):
                 try:
                     tmp = config["meals"][now]
@@ -349,10 +371,10 @@ def get_new_ausgabe():
     config["last_update_aus"] = datetime.date.today()
 
 def get_new_mensa():
-    date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})")
-    desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*")
-    desc_nl_rep_re = re.compile(u"<br>")
-    foodtags_re = re.compile(ur"(?: \([0-9vf,]*\))*$")
+    date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})", re.UNICODE)
+    desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*", re.UNICODE)
+    desc_nl_rep_re = re.compile(u"<br>", re.UNICODE)
+    foodtags_re = re.compile(ur"(?:\s*\([0-9vfS](?:,[0-9vfS])*\))", re.UNICODE)
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -402,10 +424,11 @@ def get_new_mensa():
 
             t = desc[0].text
             t = t.strip()
-            t = foodtags_re.sub('', t)
+            t = foodtags_re.sub(u'', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
-
-            t += u" (%.2f €)" % (price)
+            t = t.split()
+            t.append(u"(%.2f €)" % (price,))
+            t = ' '.join(t)
 
             try:
                 tmp = config["meals"][now]
@@ -444,14 +467,14 @@ if __name__ == '__main__':
             epilog='Warning! Extremely hacky, it will most likely break!')
 
     def is_a_date(string):
-        date_re = re.compile(u'(\d{1,2})\.(\d{1,2})\.(\d{1,4})')
-        shortdate_re = re.compile(u'(\d{1,2})\.(\d{1,2})')
+        date_re = re.compile(u'(\d{1,2})\.(\d{1,2})\.(\d{1,4})', re.UNICODE)
+        shortdate_re = re.compile(u'(\d{1,2})\.(\d{1,2})', re.UNICODE)
         day_re = re.compile(u'(mo|di|mi|do|fr|sa|so|Montag|Dienstag|Mittwoch' \
                             u'|Donnerstag|Freitag|Samstag|Sonntag)',
-                            re.IGNORECASE)
-        daynum_re = re.compile(u'(\d{1,2})')
-        all_re = re.compile(u'all', re.IGNORECASE)
-        morgen_re = re.compile(u'morgen', re.IGNORECASE)
+                            re.IGNORECASE | re.UNICODE)
+        daynum_re = re.compile(u'(\d{1,2})', re.UNICODE)
+        all_re = re.compile(u'all', re.IGNORECASE | re.UNICODE)
+        morgen_re = re.compile(u'morgen', re.IGNORECASE | re.UNICODE)
         matched = False
         ret = None    
 
@@ -528,6 +551,10 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--locations', metavar="L1:L2:...",
                         help="Locations to print " \
                         "({0})".format('|'.join(type_translation.keys())))
+    parser.add_argument('--na', '--no-autoupdate', dest='autoupdate',
+                        default=True, action='store_false',
+                        help="Disable autoupdate (useful when no internet "
+                        "connection is available)")
     parser.add_argument('date', 
             metavar='DATE', 
             nargs='?',
@@ -579,12 +606,13 @@ if __name__ == '__main__':
         update_all()
 
     current_week = datetime.date.today().isocalendar()[1]
-    if ((current_week != config["last_update_mensa"].isocalendar()[1] and
-         TYPE_MENSA in config["locations"]) or
-        (current_week != config["last_update_ipp"].isocalendar()[1] and
-         TYPE_IPP in config["locations"]) or
-        (current_week != config["last_update_aus"].isocalendar()[1] and
-         TYPE_AUS in config["locations"])):
+    if (opts.autoupdate and
+        ((current_week != config["last_update_mensa"].isocalendar()[1] and
+          TYPE_MENSA in config["locations"]) or
+         (current_week != config["last_update_ipp"].isocalendar()[1] and
+          TYPE_IPP in config["locations"]) or
+         (current_week != config["last_update_aus"].isocalendar()[1] and
+          TYPE_AUS in config["locations"]))):
         print >>sys.stderr, (bcolors.WARNING + "Last update was not in this "
                 "week." + bcolors.ENDC)
         update_all()
