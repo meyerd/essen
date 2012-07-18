@@ -147,15 +147,20 @@ def dump_one_day_meals(date):
                 print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
     ex = extrapolationsgericht(date)
-    sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
-    print " MXP",
-    print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+    if ex is not None:
+        sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
+        print " MXP",
+        print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def extrapolationsgericht(date):
     pricesplit_re = re.compile(u'(.*) (\(.*\))')
     mealsplit_re = re.compile(u'(.*) (an|mit|in|vom|auf) (.*)', re.IGNORECASE)
     mealsplit_pseudo_re = re.compile(u'.* (".*"|all .*).*', re.IGNORECASE)
+    mealsplit_pseudo1_re = re.compile(u'(.*) (".*"|all .*).*', re.IGNORECASE)
     yesterday = date - datetime.timedelta(days=1)
+    # skip weekend
+    while yesterday.weekday() == 6 or yesterday.weekday() == 5:
+        yesterday -= datetime.timedelta(days=1)
     dates = config["meals"].keys()
     meals = []
     for d in dates:
@@ -180,6 +185,7 @@ def extrapolationsgericht(date):
     for m in meals_split:
         ret1 = mealsplit_re.search(m)
         ret2 = mealsplit_pseudo_re.search(m)
+        ret3 = mealsplit_pseudo1_re.search(m)
         if ret1:
             g = ret1.groups()
             firsts.append(g[0])
@@ -187,6 +193,11 @@ def extrapolationsgericht(date):
             lasts.append(g[2])
         if ret2:
             lasts.append(ret2.groups()[0])
+        if ret3:
+            firsts.append(ret3.groups()[0])
+    
+    if len(firsts) < 1 or len(middles) < 1 or len(lasts) < 1:
+        return None
 
     return u'%s %s %s %s' % (random.choice(firsts),
                              random.choice(middles),
@@ -510,7 +521,7 @@ if __name__ == '__main__':
         If date is 'all' then all saved meals are displayed, 'morgen' displays
               the meal of the next day
 '''),
-            epilog='Warning! Extremely hacky, it will most likely break!')
+            epilog='Warning! Extremely hacky software!')
 
     def is_a_date(string):
         date_re = re.compile(u'(\d{1,2})\.(\d{1,2})\.(\d{1,4})', re.UNICODE)
