@@ -12,7 +12,7 @@ from pdfminer.cmapdb import CMapDB
 from pdfminer.layout import LAParams
 import datetime, pickle, textwrap, argparse
 import os.path
-
+import random
 
 consolewidth = 79
 
@@ -146,6 +146,52 @@ def dump_one_day_meals(date):
                     print " MEN",
                 print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
+    ex = extrapolationsgericht(date)
+    sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
+    print " MXP",
+    print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+
+def extrapolationsgericht(date):
+    pricesplit_re = re.compile(u'(.*) (\(.*\))')
+    mealsplit_re = re.compile(u'(.*) (an|mit|in|vom|auf) (.*)', re.IGNORECASE)
+    mealsplit_pseudo_re = re.compile(u'.* (".*"|all .*).*', re.IGNORECASE)
+    yesterday = date - datetime.timedelta(days=1)
+    dates = config["meals"].keys()
+    meals = []
+    for d in dates:
+        if d == yesterday:
+            for m in filter_meals(d):
+                t,s = m
+                if t is not TYPE_IPP and t is not TYPE_AUS:
+                    meals.append(s)
+    meals_split = []
+    prices = []
+    for m in meals:
+        ret = pricesplit_re.search(m)
+        if ret:
+            name, price = ret.groups()
+            meals_split.append(name)
+            prices.append(price)
+
+    firsts = []
+    middles = []
+    lasts = []
+
+    for m in meals_split:
+        ret1 = mealsplit_re.search(m)
+        ret2 = mealsplit_pseudo_re.search(m)
+        if ret1:
+            g = ret1.groups()
+            firsts.append(g[0])
+            middles.append(g[1])
+            lasts.append(g[2])
+        if ret2:
+            lasts.append(ret2.groups()[0])
+
+    return u'%s %s %s %s' % (random.choice(firsts),
+                             random.choice(middles),
+                             random.choice(lasts),
+                             random.choice(prices))
 
 def show_last_update():
     print u"ipp: %s, mensa: %s" % (str(config["last_update_ipp"]),
