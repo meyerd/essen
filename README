@@ -1,8 +1,8 @@
 essen.py
 ^^^^^^^^
 
-WARNING! This script was hacked in a few minutes, it has the "Works-on-my-machine" 
-certification. Will most likely break.
+WARNING! This script was hacked together in a few minutes, it has the 
+"works-on-my-machine" certification. Will most likely break sooner or later.
 
 A script to fetch the newest "Speiseplan" of the Max-Planck-Institut für Plasmaphysik
 canteen in Garching, Germany. Also fetches the newest "Mensa Speiselplan" of the 
@@ -30,10 +30,10 @@ $ python essen.py 15.04.2011
 $ python essen.py 15.04
 $ python essen.py 15
 
-Month and Year can be omitted and will be substituted automatically.
+Month and year can be omitted and will be substituted automatically.
 
 Uses external libraries:
-Thanks to the authors for making them public!
+Thanks to the authors for making them publicly available!
 
 BeautifulSoup
 pdfminer
