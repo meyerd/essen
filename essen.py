@@ -76,10 +76,11 @@ class bcolors:
         self.FAIL = ''
         self.ENDC = ''
 
-TYPE_AUS, TYPE_IPP, TYPE_MENSA = range(3)
+TYPE_AUS, TYPE_IPP, TYPE_MENSA, TYPE_MENSA_XP = range(4)
 type_translation = {"AUS": TYPE_AUS,
                     "IPP": TYPE_IPP,
-                    "MEN": TYPE_MENSA}
+                    "MEN": TYPE_MENSA,
+                    "MXP": TYPE_MENSA_XP}
 
 config = {}
 config["last_update_ipp"] = datetime.date(1,1,1)
@@ -145,12 +146,12 @@ def dump_one_day_meals(date):
                 else:
                     print " MEN",
                 print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
-
-    ex = extrapolationsgericht(date)
-    if ex is not None:
-        sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
-        print " MXP",
-        print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+    if TYPE_MENSA_XP in config["locations"]:
+        ex = extrapolationsgericht(date)
+        if ex is not None:
+            sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
+            print " MXP",
+            print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def extrapolationsgericht(date):
     pricesplit_re = re.compile(u'(.*) (\(.*\))', re.UNICODE)
