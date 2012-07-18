@@ -153,10 +153,13 @@ def dump_one_day_meals(date):
         print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
 
 def extrapolationsgericht(date):
-    pricesplit_re = re.compile(u'(.*) (\(.*\))')
-    mealsplit_re = re.compile(u'(.*) (an|mit|in|vom|auf) (.*)', re.IGNORECASE)
-    mealsplit_pseudo_re = re.compile(u'.* (".*"|all .*).*', re.IGNORECASE)
-    mealsplit_pseudo1_re = re.compile(u'(.*) (".*"|all .*).*', re.IGNORECASE)
+    pricesplit_re = re.compile(u'(.*) (\(.*\))', re.UNICODE)
+    mealsplit_re = re.compile(u'(.*) (an|mit|in|vom|auf) (.*)', re.IGNORECASE |
+                                                                re.UNICODE)
+    mealsplit_pseudo_re = re.compile(u'.* (".*"|all .*).*', re.IGNORECASE |
+                                                            re.UNICODE)
+    mealsplit_pseudo1_re = re.compile(u'(.*) (".*"|all .*).*', re.IGNORECASE | 
+                                                               re.UNICODE)
     yesterday = date - datetime.timedelta(days=1)
     # skip weekend
     while yesterday.weekday() == 6 or yesterday.weekday() == 5:
