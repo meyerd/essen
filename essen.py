@@ -435,7 +435,8 @@ def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})", re.UNICODE)
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*", re.UNICODE)
     desc_nl_rep_re = re.compile(u"<br>", re.UNICODE)
-    foodtags_re = re.compile(ur"(?:\s*\([0-9vfS](?:,[0-9vfS])*\))", re.UNICODE)
+    foodtags_re = re.compile(ur"(?:\s*\([0-9vfSR](?:,[0-9vfSR])*\))",
+                             re.UNICODE)
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
