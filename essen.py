@@ -16,6 +16,9 @@ import random
 
 consolewidth = 79
 
+default_encoding = sys.stdout.encoding
+if default_encoding is None:
+    default_encoding = 'utf-8'
 loske_base_url = u"http://www.betriebsrestaurant-gmbh.de/"
 loske_main = u"index.php?id=91"
 ausgabe_mittagskarte = u"http://www.protutti.com/firmen/M/Ausgabe/upfile/Wochenkarte.pdf"
@@ -129,7 +132,7 @@ def dump_all_meals():
                 print " AUS",
             else:
                 print " MEN",
-            print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+            print "- %s" % (sb.encode(default_encoding, 'replace'))
 
 def dump_one_day_meals(date):
     dates = config["meals"].keys()
@@ -145,13 +148,13 @@ def dump_one_day_meals(date):
                     print " AUS",
                 else:
                     print " MEN",
-                print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+                print "- %s" % (sb.encode(default_encoding, 'replace'))
     if TYPE_MENSA_XP in config["locations"]:
         ex = extrapolationsgericht(date)
         if ex is not None:
             sb = u'\n       '.join(unicodewrap(ex, consolewidth-7))
             print " MXP",
-            print "- %s" % (sb.encode(sys.stdout.encoding, 'replace'))
+            print "- %s" % (sb.encode(default_encoding, 'replace'))
 
 def extrapolationsgericht(date):
     pricesplit_re = re.compile(u'(.*) (\(.*\))', re.UNICODE)
@@ -267,7 +270,12 @@ def parse_loske_pdf(pdf):
         ret = date_re.search(line)
         if ret:
             day, month, year, meals = ret.groups()
-            now = datetime.date(int(year), int(month), int(day))
+            try:
+                now = datetime.date(int(year), int(month), int(day))
+            except ValueError:
+                # some weird date in pdf (like 29.02.2013), skipping these
+                # entries is the easiest solution
+                continue
             #meals = meal_detect_re.sub(ur'\n\2(\3.\4 €)', meals).strip()
             meals = meal_detect_re.finditer(meals)
             for meal_match in meals:
@@ -435,8 +443,8 @@ def get_new_mensa():
     date_re = re.compile(u".., (\d{1,2})\.(\d{1,2})\.(\d{1,4})", re.UNICODE)
     desc_nl_re = re.compile(u"(?:(.*?)(?:<br>))*", re.UNICODE)
     desc_nl_rep_re = re.compile(u"<br>", re.UNICODE)
-    foodtags_re = re.compile(ur"(?:\s*\([0-9vfSR](?:,[0-9vfSR])*\))",
-                             re.UNICODE)
+    foodtags_re = re.compile(
+        ur"(?:\s*\([0-9vfSR][0-9]?(?:,[0-9vfSR][0-9]?)*\))", re.UNICODE)
 
     wc = WebCursor();
     mensa_url = mensa.format(mensa_id[config["mensa_location"]])
@@ -548,6 +556,7 @@ if __name__ == '__main__':
 
         r = shortdate_re.search(string)
         if r:
+            print("hit")
             day, month = r.groups()
             ret = datetime.date(datetime.date.today().year,
                                 int(month), int(day))
