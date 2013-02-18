@@ -556,7 +556,6 @@ if __name__ == '__main__':
 
         r = shortdate_re.search(string)
         if r:
-            print("hit")
             day, month = r.groups()
             ret = datetime.date(datetime.date.today().year,
                                 int(month), int(day))
