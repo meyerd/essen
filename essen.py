@@ -476,14 +476,12 @@ def get_new_mensa():
             typ = m.findAll(u"td", attrs={u"class": u"gericht"})
             if len(typ) < 1:
                 error("Mensa parse error.")
-            price = -1
+            price = None
             for match, value in mensa_price_mapping.items():
                 ret = re.search(match, typ[0].text)
                 if ret:
                     price = value[config["person"]]
                     break
-            if price == -1:
-                error("Mensa parse error.")
             
             desc = m.findAll(u"td", attrs={u"class": u"beschreibung"})
             if len(desc) < 1:
@@ -497,7 +495,8 @@ def get_new_mensa():
             t = foodtags_re.sub(u'', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
             t = t.split()
-            t.append(u"(%.2f €)" % (price,))
+            if price:
+                t.append(u"(%.2f €)" % (price,))
             t = ' '.join(t)
 
             try:
