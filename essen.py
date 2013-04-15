@@ -495,7 +495,7 @@ def get_new_mensa():
             t = foodtags_re.sub(u'', t)
             t = re.sub(r'[Z|z]igeuner', u"Südländer Typ II", t)
             t = t.split()
-            if price:
+            if price is not None:
                 t.append(u"(%.2f €)" % (price,))
             t = ' '.join(t)
 
