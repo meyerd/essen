@@ -600,8 +600,10 @@ if __name__ == '__main__':
         config["locations"] = type_translation.values()
         save_config(config_file)
 
+    do_update = False
+
     if opts.u or opts.person or opts.mensa_location:
-        update_all()
+        do_update = True
 
     current_week = datetime.date.today().isocalendar()[1]
     try:
